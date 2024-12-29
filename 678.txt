@@ -1,0 +1,739 @@
+EXP-6
+ Part-3
+ //ImplementsanunsignedmultiplierP=AxB.
+ //inputs:SW11-8=A,SW3-0=B
+ //outputs: HEX5-4showstheproductP,HEX2showsA,HEX0showsB
+ modulepart3(SW,HEX5,HEX4,HEX2,HEX0);
+ input[7:0]SW;
+ output[0:6]HEX5,HEX4,HEX2,HEX0;
+ wire[3:0]A,B;
+ wire[7:0]P;
+ wire[3:1]C_b1; //carriesforrowthatANDswithB1
+ wire[5:2]PP1; //partialproductsfromrowthatANDswithB1
+ wire[3:1]C_b2; //carriesforrowthatANDswithB2
+ wire[6:3]PP2; //partialproductsfromrowthatANDswithB2
+ wire[3:1]C_b3; //carriesforrowthatANDswithB3
+ assignA=SW[7:4];
+ assignB=SW[3:0];
+ assignP[0]=A[0]&B[0];
+ //modulefa(a,b,ci,s,co);
+ fab1_a0(A[1]&B[0],A[0]&B[1],1'b0, P[1], C_b1[1]);
+ fab1_a1(A[2]&B[0],A[1]&B[1],C_b1[1],PP1[2],C_b1[2]);
+ fab1_a2(A[3]&B[0],A[2]&B[1],C_b1[2],PP1[3],C_b1[3]);
+ fab1_a3(1'b0, A[3]&B[1],C_b1[3],PP1[4],PP1[5]);
+ //modulefa(a,b,ci,s,co);
+ fab2_a0(PP1[2],A[0]&B[2],1'b0, P[2], C_b2[1]);
+ fab2_a1(PP1[3],A[1]&B[2],C_b2[1],PP2[3],C_b2[2]);
+ fab2_a2(PP1[4],A[2]&B[2],C_b2[2],PP2[4],C_b2[3]);
+ fab2_a3(PP1[5],A[3]&B[2],C_b2[3],PP2[5],PP2[6]);
+ //modulefa(a,b,ci,s,co);
+ fab3_a0(PP2[3],A[0]&B[3],1'b0, P[3],C_b3[1]);
+ fab3_a1(PP2[4],A[1]&B[3],C_b3[1],P[4],C_b3[2]);
+ fab3_a2(PP2[5],A[2]&B[3],C_b3[2],P[5],C_b3[3]);
+ fab3_a3(PP2[6],A[3]&B[3],C_b3[3],P[6],P[7]);
+ //drivethedisplaysthrougha7-segdecoders
+ hex7segdigit_5(P[7:4],HEX5);
+ hex7segdigit_4(P[3:0],HEX4);
+ hex7segdigit_3(A,HEX2);
+ hex7segdigit_2(B,HEX0);
+ endmodule
+ modulefa(a,b,ci,s,co);
+ inputa,b,ci;
+ outputs,co;
+ wirea_xor_b;
+ assigna_xor_b=a^b;
+ assigns=a_xor_b^ci;
+ assignco=(~a_xor_b&b)|(a_xor_b&ci);
+ endmodule
+ modulehex7seg(hex,display);
+ input[3:0]hex;
+output [0:6] display;
+ reg [0:6] display;
+ always @ (hex)
+ case (hex)
+ 4'h0: display = 7'b0000001;
+ 4'h1: display = 7'b1001111;
+ 4'h2: display = 7'b0010010;
+ 4'h3: display = 7'b0000110;
+ 4'h4: display = 7'b1001100;
+ 4'h5: display = 7'b0100100;
+ 4'h6: display = 7'b0100000;
+ 4'h7: display = 7'b0001111;
+ 4'h8: display = 7'b0000000;
+ 4'h9: display = 7'b0000100;
+ 4'hA: display = 7'b0001000;
+ 4'hb: display = 7'b1100000;
+ 4'hC: display = 7'b0110001;
+ 4'hd: display = 7'b1000010;
+ 4'hE: display = 7'b0110000;
+ 4'hF: display = 7'b0111000;
+ endcase
+ endmodule
+ PART-4
+ // Implements an unsigned multiplier P = A x B.
+ // inputs:SW7-0, SW9 select A, SW8 selects B, KEY[0] is reset, KEY[1] is clock
+ // outputs:
+ HEX3-0 shows the product P
+ module part4 (SW, KEY, LEDR, HEX3, HEX2, HEX1, HEX0);
+ input [9:0] SW;
+ input [1:0] KEY;
+ output [9:0] LEDR;
+ output [0:6] HEX3, HEX2, HEX1, HEX0;
+ wire Resetn, Clock;
+ reg [7:0] A, B;
+ reg [15:0] P_reg;
+ wire [15:0] PP0, PP1, PP2, PP3, PP4, PP5, PP6;
+ wire [15:0] P;
+ assign Resetn = KEY[0];
+ assign Clock = KEY[1];
+ always @(posedge Clock)
+ begin
+ if (~Resetn)
+ begin
+ A<=8'b0; B <= 8'b0; P_reg <= 16'b0;
+ end
+ else
+ begin
+ end
+ end
+ if (SW[9])
+ if (SW[8])
+ P_reg <= P;
+ A<=SW[7:0];
+ B<=SW[7:0];
+ assign LEDR[7:0] = SW[9] ? A : (SW[8] ? B : 8'b0);
+ assign LEDR[9:8] = SW[9:8];
+ assign PP0 = { 8'd0, A & {8{B[0]}} };
+ assign PP1 = PP0 + { 7'd0, A & {8{B[1]}}, 1'd0 };
+assign PP2 = PP1 + { 6'd0, A & {8{B[2]}}, 2'd0 };
+ assign PP3 = PP2 + { 5'd0, A & {8{B[3]}}, 3'd0 };
+ assign PP4 = PP3 + { 4'd0, A & {8{B[4]}}, 4'd0 };
+ assign PP5 = PP4 + { 3'd0, A & {8{B[5]}}, 5'd0 };
+ assign PP6 = PP5 + { 2'd0, A & {8{B[6]}}, 6'd0 };
+ assign P = PP6 + { 1'd0, A & {8{B[7]}}, 7'd0 };
+ // drive the display through a 7-seg decoder
+ hex7seg digit_3 (P_reg[15:12], HEX3);
+ hex7seg digit_2 (P_reg[11:8], HEX2);
+ hex7seg digit_1 (P_reg[7:4], HEX1);
+ hex7seg digit_0 (P_reg[3:0], HEX0);
+ endmodule
+ module hex7seg (hex, display);
+ input [3:0] hex;
+ output [0:6] display;
+ reg [0:6] display;
+ always @ (hex)
+ case (hex)
+ 4'h0: display = 7'b0000001;
+ 4'h1: display = 7'b1001111;
+ 4'h2: display = 7'b0010010;
+ 4'h3: display = 7'b0000110;
+ 4'h4: display = 7'b1001100;
+ 4'h5: display = 7'b0100100;
+ 4'h6: display = 7'b0100000;
+ 4'h7: display = 7'b0001111;
+ 4'h8: display = 7'b0000000;
+ 4'h9: display = 7'b0001100;
+ 4'hA: display = 7'b0001000;
+ 4'hb: display = 7'b1100000;
+ 4'hC: display = 7'b0110001;
+ 4'hd: display = 7'b1000010;
+ 4'hE: display = 7'b0110000;
+ 4'hF: display = 7'b0111000;
+ endcase
+ endmodule
+ PART-5
+ // Implements an unsigned multiplier P = A x B.
+ // inputs:SW7-0, SW9 select A, SW8 selects B, KEY[0] is reset, KEY[1] is clock
+ // outputs:
+ HEX3-0 shows the product P
+ module part5 (SW, KEY, LEDR, HEX3, HEX2, HEX1, HEX0);
+ input [9:0] SW;
+ input [1:0] KEY;
+ output [9:0] LEDR;
+ output [0:6] HEX3, HEX2, HEX1, HEX0;
+ wire Resetn, Clock;
+ reg [7:0] A, B;
+ reg [15:0] P_reg;
+ wire [15:0] PP0, PP1, PP2, PP3, PP4, PP5, PP6;
+ wire [15:0] P;
+ assign Resetn = KEY[0];
+ assign Clock = KEY[1];
+ always @(posedge Clock)
+ begin
+ if (~Resetn)
+ begin
+A<=8'b0; B <= 8'b0; P_reg <= 16'b0;
+ end
+ else
+ begin
+ end
+ end
+ if (SW[9])
+ if (SW[8])
+ P_reg <= P;
+ A<=SW[7:0];
+ B<=SW[7:0];
+ assign LEDR[7:0] = SW[9] ? A : (SW[8] ? B : 8'b0);
+ assign LEDR[9:8] = SW[9:8];
+ assign PP0 = { 8'd0, A & {8{B[0]}} } + { 7'd0, A & {8{B[1]}}, 1'd0 };
+ assign PP1 = { 6'd0, A & {8{B[2]}}, 2'd0 } + { 5'd0, A & {8{B[3]}}, 3'd0 };
+ assign PP2 = { 4'd0, A & {8{B[4]}}, 4'd0 } + { 3'd0, A & {8{B[5]}}, 5'd0 };
+ assign PP3 = { 2'd0, A & {8{B[6]}}, 6'd0 } + { 1'd0, A & {8{B[7]}}, 7'd0 };
+ assign PP4 = PP0 + PP1;
+ assign PP5 = PP2 + PP3;
+ assign P = PP4 + PP5;
+ // drive the displays through 7-seg decoders
+ hex7seg digit_3 (P_reg[15:12], HEX3);
+ hex7seg digit_2 (P_reg[11:8], HEX2);
+ hex7seg digit_1 (P_reg[7:4], HEX1);
+ hex7seg digit_0 (P_reg[3:0], HEX0);
+ endmodule
+ module hex7seg (hex, display);
+ input [3:0] hex;
+ output [0:6] display;
+ reg [0:6] display;
+ always @ (hex)
+ case (hex)
+ 4'h0: display = 7'b0000001;
+ 4'h1: display = 7'b1001111;
+ 4'h2: display = 7'b0010010;
+ 4'h3: display = 7'b0000110;
+ 4'h4: display = 7'b1001100;
+ 4'h5: display = 7'b0100100;
+ 4'h6: display = 7'b0100000;
+ 4'h7: display = 7'b0001111;
+ 4'h8: display = 7'b0000000;
+ 4'h9: display = 7'b0001100;
+ 4'hA: display = 7'b0001000;
+ 4'hb: display = 7'b1100000;
+ 4'hC: display = 7'b0110001;
+ 4'hd: display = 7'b1000010;
+ 4'hE: display = 7'b0110000;
+ 4'hF: display = 7'b0111000;
+ endcase
+ endmodul
+
+
+
+Exp-7
+ PART2
+ Program:
+ modulepart2(SW,KEY,LEDR);
+ input[1:0]SW;
+ input[0:0]KEY;
+ output[9:0]LEDR;
+ wireClock,Resetn,w,z;
+ reg[3:0]y_Q,Y_D;
+ assignClock=KEY[0];
+ assignResetn=SW[0];
+ assignw=SW[1];
+ parameterA=4'b0000,B=4'b0001,C=4'b0010,D=4'b0011,E=4'b0100,
+ F=4'b0101,G=4'b0110,H=4'b0111,I=4'b1000;
+ always@(w,y_Q)
+ begin:state_table
+ case(y_Q)
+ A: if(!w)Y_D=B;
+ elseY_D=F;
+ B: if(!w)Y_D=C;
+ elseY_D=F;
+ C: if(!w)Y_D=D;
+ elseY_D=F;
+ D: if(!w)Y_D=E;
+ elseY_D=F;
+ E: if(!w)Y_D=E;
+ elseY_D=F;
+ F: if(!w)Y_D=B;
+ elseY_D=G;
+ G: if(!w)Y_D=B;
+ elseY_D=H;
+ H: if(!w)Y_D=B;
+ elseY_D=I;
+ I: if(!w)Y_D=B;
+ elseY_D=I;
+ default:Y_D=4'bxxxx;
+ endcase
+ end//state_table
+ always@(posedgeClock)
+ if(Resetn==1'b0) //synchronousclear
+ y_Q<=A;
+ else
+ y_Q<=Y_D;
+ assignz=((y_Q==E)|(y_Q==I))?1'b1:1'b0;
+ assignLEDR[3:0]=y_Q;
+ assignLEDR[9]=z;
+ assignLEDR[8:4]=5'b0;
+ endmodule
+
+
+
+
+PART3
+ Program:
+ modulepart3(clk,rst,w,z,sr0,sr1);
+ inputclk,rst,w;
+ outputregz;
+ outputreg[3:0]sr0,sr1;
+ always@(posedgeclkornegedgerst)begin
+ if(!rst)
+ sr0<=4'b0000;
+ else
+ sr0<={sr0[2:0],~w};
+ end
+ always@(posedgeclkornegedgerst)begin
+ if(!rst)
+ sr1<=4'b0000;
+ else
+ sr1<={sr1[2:0],w};
+ end
+ always@(sr0orsr1)begin
+ z=(sr0==4'b0000)||(sr1==4'b1111);
+ end
+ endmodule
+
+
+
+
+PART4
+ Program:
+ //ThisisaMorsecodeencodercircuit.ItdisplaystheMorsecodefor
+ //lettersAtoHonLEDR[0].Thelettertobedisplayedisselectedusing
+ //SW[3..0],usingA=000,B=001,...,H=111.
+ modulepart4(SW,CLOCK_50,KEY,LEDR);
+ /******************************************************************/
+ /**** PARAMETERDECLARATIONS ****/
+ /******************************************************************/
+ //SWswitchpatterns,Morsecodes,andcodelengthsaredefinedbelow(intheMorse
+ //code,0=dot,1=dash)
+ parameterA_SW=3'b000,A_MORSE=4'b0010,A_LENGTH=3'd2;/*.-*/
+ parameterB_SW=3'b001,B_MORSE=4'b0001,B_LENGTH=3'd4;/*-...*/
+ parameterC_SW=3'b010,C_MORSE=4'b0101,C_LENGTH=3'd4;/*-.-.*/
+ parameterD_SW=3'b011,D_MORSE=4'b0001,D_LENGTH=3'd3;/*-..*/
+ parameterE_SW=3'b100,E_MORSE=4'b0000,E_LENGTH=3'd1;/*. */
+ parameterF_SW=3'b101,F_MORSE=4'b0100,F_LENGTH=3'd4;/*..-.*/
+ parameterG_SW=3'b110,G_MORSE=4'b0011,G_LENGTH=3'd3;/*--.*/
+ parameterH_SW=3'b111,H_MORSE=4'b0000,H_LENGTH=3'd4;/*.......*/
+ parameter s_WAIT_SEND=3'b000,s_WAIT_BLANK=3'b001,s_SEND_DOT=3'b010,
+ s_SEND_DASH_1=3'b011,s_SEND_DASH_2=3'b100,
+ s_SEND_DASH_3=3'b101,
+ s_RELEASE_SEND=3'b110;
+ /******************************************************************/
+ /**** PORTDECLARATIONS ****/
+ /******************************************************************/
+ input[2:0]SW;
+ input[1:0]KEY;
+ inputCLOCK_50;
+ output[9:0]LEDR;
+ /******************************************************************/
+ /**** LOCALWIREDECLARATIONS ****/
+ /******************************************************************/
+ wireClock,Resetn,go,half_sec_enable,load_regs,shift_and_count,light_on;
+ reg[3:0]morse_code;
+ reg[2:0]morse_length;
+ reg[3:0]send_data;
+ reg[2:0]data_size;
+ wire[1:0]pulse_cycle;
+ reg[3:0]y_Q,Y_D;
+ /******************************************************************/
+ /**** IMPLEMENTATION ****/
+/******************************************************************/
+ assignClock=CLOCK_50;
+ assignResetn=KEY[0];
+ assigngo=~KEY[1];
+ //FSMStateTable
+ always@(go,y_Q,send_data,data_size,half_sec_enable)
+ begin:state_table
+ case(y_Q)
+ s_WAIT_SEND:
+ if(go)Y_D=s_WAIT_BLANK;
+ elseY_D=s_WAIT_SEND;
+ s_WAIT_BLANK://syncwiththehalf-secondpulses
+ if(!half_sec_enable)
+ Y_D=s_WAIT_BLANK;
+ elseif(send_data[0]==1'b0)
+ Y_D=s_SEND_DOT;
+ else
+ Y_D=s_SEND_DASH_1;
+ s_SEND_DOT: //waithereforonehalf-secondperiod
+ if(!half_sec_enable)
+ Y_D=s_SEND_DOT;
+ elseif(data_size=='d1)//checkifwearedonewiththisletter
+ Y_D=s_RELEASE_SEND;
+ else
+ Y_D=s_WAIT_BLANK;
+ s_SEND_DASH_1: //waitforthreehalf-secondperiods
+ if(!half_sec_enable)
+ Y_D=s_SEND_DASH_1;
+ else
+ Y_D=s_SEND_DASH_2;
+ s_SEND_DASH_2: //waitfortwomorehalf-secondperiods
+ if(!half_sec_enable)
+ Y_D=s_SEND_DASH_2;
+ else
+ Y_D=s_SEND_DASH_3;
+ s_SEND_DASH_3: //waitforonemorehalf-secondperiod
+ if(!half_sec_enable)
+ Y_D=s_SEND_DASH_3;
+ elseif(data_size=='d1)//checkifwearedonewiththisletter
+ Y_D=s_RELEASE_SEND;
+ else
+ Y_D=s_WAIT_BLANK;
+ s_RELEASE_SEND:
+ if(~go)Y_D=s_WAIT_SEND;
+ elseY_D=s_RELEASE_SEND;
+ default:Y_D=3'bxxx;
+endcase
+ end//state_table
+ //FSMStateflip-flops
+ always@(posedgeClock)
+ if(Resetn==1'b0) //synchronousclear
+ y_Q<=s_WAIT_SEND;
+ else
+ y_Q<=Y_D;
+ //FSMoutputs
+ //turnontheMorsecodelightinthestatesbelow
+ assignlight_on=((y_Q==s_SEND_DOT)|(y_Q==s_SEND_DASH_1)|
+ (y_Q==s_SEND_DASH_2)|(y_Q==s_SEND_DASH_3));
+ //specifywhentoloadtheMorsecodeintotheshiftregister,andlengthintothecounter
+ assignload_regs=(y_Q==s_WAIT_SEND)&go;
+ //specifywhentoshifttheMorsecodebitsanddecrementthelengthcounter
+ assignshift_and_count=((y_Q==s_SEND_DOT)|(y_Q==s_SEND_DASH_3))&
+ half_sec_enable;
+ /*Createanenablesignalthatisassertedonceevery0.5ofasecond.*/
+ modulo_counterhalf_sec(.Clock(CLOCK_50),.Resetn(Resetn),.rollover(half_sec_enable));
+ defparamhalf_sec.n=25;
+ defparamhalf_sec.k=25000000;
+ /*Letterselection*/
+ always@(*)
+ case(SW)
+ A_SW:beginmorse_code=A_MORSE;morse_length=A_LENGTH;end
+ B_SW: beginmorse_code=B_MORSE;morse_length=B_LENGTH;end
+ C_SW: beginmorse_code=C_MORSE;morse_length=C_LENGTH;end
+ D_SW:beginmorse_code=D_MORSE;morse_length=D_LENGTH;end
+ E_SW: beginmorse_code=E_MORSE;morse_length=E_LENGTH;end
+ F_SW: beginmorse_code=F_MORSE;morse_length=F_LENGTH;end
+ G_SW:beginmorse_code=G_MORSE;morse_length=G_LENGTH;end
+ H_SW: beginmorse_code=H_MORSE;morse_length=H_LENGTH;end
+ endcase
+ /*StoretheMorsecodetobesentinashiftregister,anditslengthinacounter*/
+ always@(posedgeCLOCK_50)
+ begin
+ if(~Resetn)
+ begin
+ end
+ else
+ send_data<='d0;
+ data_size<='d0;
+ if(load_regs)
+begin
+ send_data<=morse_code;
+ data_size<=morse_length;
+ end
+ elseif(shift_and_count)//shiftanddecrementwhenappropriate
+ begin
+ end
+ end
+ send_data[2:0]<=send_data[3:1];
+ send_data[3]<=1'b0;
+ data_size<=data_size-1'b1;
+ assignLEDR[0]=light_on;
+ assignLEDR[9:1]=9'b0;
+ endmodule
+ modulemodulo_counter(Clock,Resetn, rollover);
+ /******************************************************************/
+ /**** PARAMETERDECLARATIONS ****/
+ /******************************************************************/
+ parameter n=4;
+ parameter k=16;
+ /******************************************************************/
+ /**** PORTDECLARATIONS ****/
+ /******************************************************************/
+ input Clock,Resetn;
+ output rollover;
+ reg [n-1:0]Q;
+ /******************************************************************/
+ /**** IMPLEMENTATION ****/
+ /******************************************************************/
+ always@(posedgeClock)
+ begin
+ if(!Resetn)
+ Q<='d0;
+ elseif(Q==k-1)
+ Q<='d0;
+ else
+ Q<=Q+1'b1;
+ end
+ assignrollover=(Q==k-1);
+ endmodule
+
+
+
+
+LABORATORYEXERCISE–8
+ PART1
+ Program:
+ 3modulepart1(address,clock,data,wren,q);
+ inputclock,wren;
+ input[3:0]data;
+ input[4:0]address;
+ output[3:0]q;
+ Part1i1(address,clock,data,wren,q);
+ Endmodule
+
+
+
+
+PART2
+ Program:
+ //Thiscodeinstantiatesa32x4memory
+ //
+ //inputs:KEY0istheclock,SW3-SW0providesdatatowriteintomemory.
+ //SW8-SW4providesthememoryaddress,SW9isthememoryWriteinput.
+ //outputs:7-segdisplaysHEX5-4showthememoryaddress,HEX2
+ //displaysthedatainputtothememory,andHEX0showthecontentsread
+ //fromthememory.LEDGRshowsthestatusoftheSWswitches.
+ modulepart2(KEY,SW,HEX5,HEX4,HEX2,HEX0,LEDR);
+ input[0:0]KEY;
+ input[9:0]SW;
+ output[0:6]HEX5,HEX4,HEX2,HEX0;
+ output[9:0]LEDR;
+ wireClock,Write;
+ wire[4:0]Address;
+ wire[3:0]DataIn,DataOut;
+ assignClock=KEY[0];
+ assignWrite=SW[9];
+ assignDataIn=SW[3:0];
+ assignAddress=SW[8:4];
+ //instantiatememorymodule
+ //moduleram32x4(address,clock,data,wren,q);
+ ram32x4U1(Address,Clock,DataIn,Write,DataOut);
+ //displaythedatainput,dataoutput,andaddressonthe7-segs
+ hex7segdigit0(DataOut[3:0],HEX0);
+ hex7segdigit2(DataIn[3:0],HEX2);
+ hex7segdigit5({3'b0,Address[4]},HEX5);
+ hex7segdigit4(Address[3:0],HEX4);
+ assignLEDR[3:0]=DataIn;
+ assignLEDR[8:4]=Address;
+ assignLEDR[9]=Write;
+ endmodule
+ //
+ modulehex7seg(hex,display);
+ input[3:0]hex;
+ output[0:6]display;
+ reg[0:6]display;
+always@(hex)
+ case(hex)
+ 4'h0:display=7'b0000001;
+ 4'h1:display=7'b1001111;
+ 4'h2:display=7'b0010010;
+ 4'h3:display=7'b0000110;
+ 4'h4:display=7'b1001100;
+ 4'h5:display=7'b0100100;
+ 4'h6:display=7'b0100000;
+ 4'h7:display=7'b0001111;
+ 4'h8:display=7'b0000000;
+ 4'h9:display=7'b0000100;
+ 4'hA:display=7'b0001000;
+ 4'hb:display=7'b1100000;
+ 4'hC:display=7'b0110001;
+ 4'hd:display=7'b1000010;
+ 4'hE:display=7'b0110000;
+ 4'hF:display=7'b0111000;
+ endcase
+ endmodule
+
+
+
+
+ PART3
+ Program:
+ //Name:RYashswini,USN:1MS21EE043
+ //Thiscodeinstantiatesa32x4memory
+ //
+ //inputs:KEY0istheclock,SW3-SW0providesdatatowriteintomemory.
+ //SW8-SW4providesthememoryaddress,SW9isthememoryWriteinput.
+ //outputs:7-segdisplaysHEX5-4showthememoryaddress,HEX2
+ //displaysthedatainputtothememory,andHEX0showthecontentsread
+//fromthememory.LEDRshowsthestatusoftheSWswitches.
+ modulepart3(KEY,SW,HEX5,HEX4,HEX2,HEX0,LEDR);
+ input[0:0]KEY;
+ input[9:0]SW;
+ output[0:6]HEX5,HEX4,HEX2,HEX0;
+ output[9:0]LEDR;
+ wireClock,Write;
+ wire[4:0]Address;
+ wire[3:0]DataIn,DataOut;
+ assignClock=KEY[0];
+ assignWrite=SW[9];
+ assignDataIn=SW[3:0];
+ assignAddress=SW[8:4];
+ reg[3:0]memory_array[31:0];
+ reg[4:0]Address_reg;
+ //inferRAMmodule
+ always@(posedgeClock)
+ begin
+ if(Write)
+ memory_array[Address]<=DataIn;
+ Address_reg<=Address;
+ end
+ assignDataOut=memory_array[Address_reg];
+ //displaythedatainput,dataoutput,andaddressonthe7-segs
+ hex7segdigit0(DataOut[3:0],HEX0);
+ hex7segdigit1(DataIn[3:0],HEX2);
+ hex7segdigit5({3'b0,Address[4]},HEX5);
+ hex7segdigit4(Address[3:0],HEX4);
+ assignLEDR[3:0]=DataIn;
+ assignLEDR[8:4]=Address;
+ assignLEDR[9]=Write;
+ endmodule
+ //
+ modulehex7seg(hex,display);
+ input[3:0]hex;
+ output[0:6]display;
+ reg[0:6]display;
+ always@(hex)
+endmodule
+ RLTView:
+ PART4
+ case(hex)
+ 4'h0:display=7'b0000001;
+ 4'h1:display=7'b1001111;
+ 4'h2:display=7'b0010010;
+ 4'h3:display=7'b0000110;
+ 4'h4:display=7'b1001100;
+ 4'h5:display=7'b0100100;
+ 4'h6:display=7'b0100000;
+ 4'h7:display=7'b0001111;
+ 4'h8:display=7'b0000000;
+ 4'h9:display=7'b0000100;
+ 4'hA:display=7'b0001000;
+ 4'hb:display=7'b1100000;
+ 4'hC:display=7'b0110001;
+ 4'hd:display=7'b1000010;
+ 4'hE:display=7'b0110000;
+ 4'hF:display=7'b0111000;
+ endcase
+endmodule
+
+
+
+ PART4
+ case(hex)
+ 4'h0:display=7'b0000001;
+ 4'h1:display=7'b1001111;
+ 4'h2:display=7'b0010010;
+ 4'h3:display=7'b0000110;
+ 4'h4:display=7'b1001100;
+ 4'h5:display=7'b0100100;
+ 4'h6:display=7'b0100000;
+ 4'h7:display=7'b0001111;
+ 4'h8:display=7'b0000000;
+ 4'h9:display=7'b0000100;
+ 4'hA:display=7'b0001000;
+ 4'hb:display=7'b1100000;
+ 4'hC:display=7'b0110001;
+ 4'hd:display=7'b1000010;
+ 4'hE:display=7'b0110000;
+ 4'hF:display=7'b0111000;
+ endcase
+ Program:
+ //Thiscodeimplementsasimpledual-portmemory
+ //
+ //inputs:CLOCK_50istheclock,KEY0isResetn,SW3-SW0providesdatato
+ //writeintomemory.
+ //SW8-SW4providesthememoryaddressforwriting,SW9isthememoryWriteinput.
+//outputs:7-segdisplayHEX5-4displaysthewriteaddress,andHEX3-2showstheread
+ //address.HEX1displaysthewritedataandHEX0showsthereaddata.
+ //LEDRshowsthestatusoftheSWswitches.
+ modulepart4(CLOCK_50,KEY,SW,HEX5,HEX4,HEX3,HEX2,HEX1,HEX0,LEDR);
+ inputCLOCK_50;
+ input[0:0]KEY;
+ input[9:0]SW;
+ output[0:6]HEX5,HEX4,HEX3,HEX2,HEX1,HEX0;
+ output[9:0]LEDR;
+ wireClock,Resetn,Write,Write_sync;
+ wire[4:0]Write_address,Write_address_sync;
+ wire[3:0]DataIn,DataIn_sync,DataOut;
+ assignResetn=KEY[0];
+ assignClock=CLOCK_50;
+ //synchronizeallasynchronousinputstotheclock
+ regne#(.n(1))wr_sync_reg(SW[9],Clock,Resetn,1'b1,Write_sync);
+ regne#(.n(1))wr_reg(Write_sync,Clock,Resetn,1'b1,Write);
+ regne#(.n(5))addr_sync_reg(SW[8:4],Clock,Resetn,1'b1,Write_address_sync);
+ regne#(.n(5))addr_reg(Write_address_sync,Clock,Resetn,1'b1,Write_address);
+ regne#(.n(4))din_sync_reg(SW[3:0],Clock,Resetn,1'b1,DataIn_sync);
+ regne#(.n(4))din_reg(DataIn_sync,Clock,Resetn,1'b1,DataIn);
+ //onesecondcyclecounter
+ parameterm=25;
+ reg[m-1:0]slow_count;
+ reg[4:0]Read_address;//cyclesfromaddresses0to31atonesecondperaddress
+ //Createa1Hz5-bitaddresscounter
+ //Alargecountertoproducea1second(approx)enable
+ always@(posedgeClock)
+ slow_count<=slow_count+1'b1;
+ //thereadaddresscounter
+ always@(posedgeClock)
+ if(Resetn==0)
+ Read_address<=5'b0;
+ elseif(slow_count==0)
+ Read_address<=Read_address+1'b1;
+ //instantiatememorymodule
+ //moduleram32x4(clock,data,rdaddress,wraddress,wren,q);
+ ram32x4U1(Clock,DataIn,Read_address,Write_address,Write,DataOut);
+ //displaythedatainput,dataoutput,andaddressesonthe7-segs
+ hex7segdigit5({3'b0,Write_address[4]},HEX5);
+ hex7segdigit4(Write_address[3:0],HEX4);
+hex7segdigit3({3'b0,Read_address[4]},HEX3);
+ hex7segdigit2(Read_address[3:0],HEX2);
+ hex7segdigit1(DataIn[3:0],HEX1);
+ hex7segdigit0(DataOut[3:0],HEX0);
+ assignLEDR[3:0]=DataIn;
+ assignLEDR[8:4]=Write_address;
+ assignLEDR[9]=Write;
+ endmodule
+ moduleregne(R,Clock,Resetn,E,Q);
+ parametern=7;
+ input[n-1:0]R;
+ inputClock,Resetn,E;
+ output[n-1:0]Q;
+ reg[n-1:0]Q;
+ always@(posedgeClock)
+ if(Resetn==0)
+ Q<={n{1'b0}};
+ elseif(E)
+ Q<=R;
+ endmodule
+ //
+ modulehex7seg(hex,display);
+ input[3:0]hex;
+ output[0:6]display;
+ reg[0:6]display;
+ always@(hex)
+ case(hex)
+ 4'h0:display=7'b0000001;
+ 4'h1:display=7'b1001111;
+ 4'h2:display=7'b0010010;
+ 4'h3:display=7'b0000110;
+ 4'h4:display=7'b1001100;
+ 4'h5:display=7'b0100100;
+ 4'h6:display=7'b0100000;
+ 4'h7:display=7'b0001111;
+ 4'h8:display=7'b0000000;
+ 4'h9:display=7'b0000100;
+ 4'hA:display=7'b0001000;
+ 4'hb:display=7'b1100000;
+ 4'hC:display=7'b0110001;
+ 4'hd:display=7'b1000010;
+endmodule
+ RLTView:
+ 4'hE:display=7'b0110000;
+ 4'hF:display=7'b0111000;
+ endcase
+endmodule
+
+
+
+
+
+
+
+
